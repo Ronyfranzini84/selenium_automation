@@ -1,0 +1,5 @@
+2026-10-11 21:06:54,924 | INFO | Starting Selenium automation
+2026-10-11 21:06:54,924 | INFO | Browser opened successfully
+2026-10-11 21:06:54,925 | WARNING | Example warning message
+2026-10-11 21:06:54,925 | ERROR | Example error message
+2026-10-11 21:06:54,925 | INFO | Automation finished

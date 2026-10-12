@@ -1,6 +1,11 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from pathlib import Path
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException
+)
+import logging
 
 
 rating_map = {
@@ -19,25 +24,39 @@ def extract_products(driver):
         "//article[@class='product_pod']"
     )
 
-    for book in books:
-        book_name = book.find_element(By.XPATH,".//h3/a").get_attribute("title")
+    for index, book in enumerate(books, start=1):
 
-        price_text = book.find_element(By.XPATH, ".//p[@class='price_color']").text
+        try:
+            book_name = book.find_element(By.XPATH,".//h3/a").get_attribute("title")
 
-        book_price = float(price_text.replace("£", ""))
+            price_text = book.find_element(By.XPATH, ".//p[@class='price_color']").text
 
-        availability = book.find_element(By.XPATH,".//p[contains(@class, 'availability')]").text.strip()
+            book_price = float(price_text.replace("£", ""))
 
-        rating_text = book.find_element(By.XPATH, ".//p[contains(@class, 'star-rating')]").get_attribute('class')
-        rating_word = rating_text.split()[-1]
-        book_rating = rating_map[rating_word]
-        
-        products_data.append({
-            "name": book_name,
-            "price": book_price,
-            "availability": availability,
-            "rating": book_rating
-        })
+            availability = book.find_element(By.XPATH,".//p[contains(@class, 'availability')]").text.strip()
+
+            rating_text = book.find_element(By.XPATH, ".//p[contains(@class, 'star-rating')]").get_attribute('class')
+            rating_word = rating_text.split()[-1]
+            book_rating = rating_map[rating_word]
+            
+            products_data.append({
+                "name": book_name,
+                "price": book_price,
+                "availability": availability,
+                "rating": book_rating
+            })
+        except (
+            NoSuchElementException,
+            ValueError,
+            KeyError
+        ) as error:
+            logging.error(f"Error extracting book {index}: {error}")
+
+            continue
+
+        except StaleElementReferenceException:
+            raise
+
     return products_data
 
 def navigate_page(driver, wait):
@@ -56,7 +75,7 @@ def navigate_page(driver, wait):
         all_products.extend(page_products)
         
 
-        print(
+        logging.info(
             f"Page {page_number} completed | "
             f"Total books: {len(all_products)}"
         )
@@ -82,6 +101,6 @@ def save_excel(dataframe, folder_path, file_name):
 
     file_path = folder / file_name
     dataframe.to_excel(file_path, index=False)
-    print(f"Excel saved at: {file_path}")
+    logging.info(f"Excel saved at: {file_path}")
 
     return file_path
